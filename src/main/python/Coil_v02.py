@@ -1,63 +1,72 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
-# Define parameters for the solenoids
-N_turns = 100  # Number of turns
-L = 0.1  # Length of each solenoid (meters)
-R = 0.01  # Radius of each solenoid (meters)
-shift_distance = 0.2  # Distance of solenoids from origin (meters)
-points_per_turn = 50  # Points per turn (rendered)
-
+# Function to generate points for the solenoids
 def generate_solenoid_points(N_turns, L, R, shift_distance, points_per_turn):
-    # Total points to plot along the solenoid
+    # Calculate total points to plot
     total_points = N_turns * points_per_turn
 
-    # Parametric equations for the helical shape of the solenoid
-    z = np.linspace(0, L, total_points)  # Along the solenoid's length
+    # Parametric equation for the helical shape
+    z = np.linspace(0, L, total_points)  # Solenoid length centered at the origin
     theta = np.linspace(0, 2 * np.pi * N_turns, total_points)  # Angular positions
 
-    # Coordinates of a standard helix (solenoid along z-axis)
-    x_helix = R * np.cos(theta)
-    y_helix = R * np.sin(theta)
+    # Helix coordinates in cylindrical form
+    x_helix = R * np.cos(theta)  # x-coordinates (circle)
+    y_helix = R * np.sin(theta)  # y-coordinates (circle)
 
-    # Shift each solenoid along different axes and rotate them
-    # First, set the base solenoid along the positive z-axis (Solenoid 1)
-    solenoid1 = np.column_stack((x_helix, y_helix, z - shift_distance))
+    # solenoid 1:
+    z_shifted = (np.sqrt(2) / 2) * (z + shift_distance + x_helix)
+    x_shifted = (np.sqrt(2) / 2) * (z + shift_distance - x_helix)
 
-    # Solenoid 2: Rotate solenoid1 by 90 degrees around the y-axis (placing it along the x-axis)
-    solenoid2 = np.column_stack((z - shift_distance, y_helix, x_helix))
+    # Solenoid 1: Along the x = z axis
+    solenoid1 = np.column_stack((x_shifted, y_helix, z_shifted))
 
-    return solenoid1, solenoid2
+    #solenoid 3:
+    x_shifted = (x_shifted + np.sqrt(3) * y_helix) / 2
+    y_shifted = (y_helix + np.sqrt(3) * x_shifted) / 2
 
+    # Solenoid 3: rotated sol. 1 by 60 degrees
+    solenoid3 = np.column_stack((x_shifted, y_shifted, z_shifted))
+
+    # solenoid 2:
+    z_shifted = (np.sqrt(2) / 2) * (z + shift_distance + x_helix)
+    x_shifted = -(np.sqrt(2) / 2) * (z + shift_distance - x_helix)
+
+    # Solenoid 2: Along the x = -z axis
+    solenoid2 = np.column_stack((x_shifted, y_helix, z_shifted))
+
+    # solenoid 4:
+    x_shifted = (x_shifted + np.sqrt(3) * y_helix) / 2
+    y_shifted = (y_helix + np.sqrt(3) * x_shifted) / 2
+
+    # Solenoid 4: rotated sol. 2 by 60 degrees
+    solenoid4 = np.column_stack((x_shifted, y_shifted, z_shifted))
+
+    return solenoid1, solenoid2, solenoid3, solenoid4
+
+# Plot the solenoids
 def plot_solenoids(solenoid1, solenoid2, solenoid3, solenoid4):
     # Create a 3D plot
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
 
     # Plot each solenoid with different colors
-    ax.plot(solenoid1[:, 0], solenoid1[:, 1], solenoid1[:, 2], lw=1, color='b', label='Solenoid 1 (z-axis)')
-    ax.plot(solenoid2[:, 0], solenoid2[:, 1], solenoid2[:, 2], lw=1, color='r', label='Solenoid 2 (x-axis)')
-    ax.plot(solenoid3[:, 0], solenoid3[:, 1], solenoid3[:, 2], lw=1, color='g', label='Solenoid 3 (60° rotation)')
-    ax.plot(solenoid4[:, 0], solenoid4[:, 1], solenoid4[:, 2], lw=1, color='m', label='Solenoid 4 (60° rotation)')
+    ax.plot(solenoid1[:, 0], solenoid1[:, 1], solenoid1[:, 2], lw=1, color='b', label='Solenoid 1')
+    ax.plot(solenoid2[:, 0], solenoid2[:, 1], solenoid2[:, 2], lw=1, color='r', label='Solenoid 2')
+    ax.plot(solenoid3[:, 0], solenoid3[:, 1], solenoid2[:, 2], lw=1, color='y', label='Solenoid 3')
+    ax.plot(solenoid4[:, 0], solenoid4[:, 1], solenoid2[:, 2], lw=1, color='g', label='Solenoid 4')
 
     # Set labels and title
     ax.set_xlabel('X-axis (meters)')
     ax.set_ylabel('Y-axis (meters)')
     ax.set_zlabel('Z-axis (meters)')
-    ax.set_title('3D Visualization of Four Solenoids with Adjusted Angles')
+    ax.set_title('Four Solenoids Model')
 
     # Set aspect ratio for better visualization
     ax.set_box_aspect([1, 1, 1])
 
-    # Add a legend to differentiate the solenoids
+    # Add a legend
     ax.legend()
 
     # Show the plot
     plt.show()
-
-# Generate the solenoids
-solenoid1, solenoid2, solenoid3, solenoid4 = generate_solenoid_points(N_turns, L, R, shift_distance, points_per_turn)
-
-# Plot the solenoids
-plot_solenoids(solenoid1, solenoid2, solenoid3, solenoid4)
