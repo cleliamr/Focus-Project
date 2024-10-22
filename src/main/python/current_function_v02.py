@@ -20,8 +20,8 @@ current4 = np.sin(np.pi * (Hz * t - (1 + alpha_pi)) # yellow
 # x- rot. axis
 current1 = np.sin(np.pi * (Hz * t - beta_pi)) # blue
 current2 = np.sin(np.pi * Hz * t) # green
-current3 = np.sin(np.pi * Hz * t) + 0.05 # red
-current4 = np.sin(np.pi * (Hz * t - beta_pi)) + 0.05 # yellow
+current3 = np.sin(np.pi * Hz * t) # red
+current4 = np.sin(np.pi * (Hz * t - beta_pi)) # yellow
 """
 
 

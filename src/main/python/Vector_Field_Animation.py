@@ -64,6 +64,17 @@ def plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder):
     mlab.colorbar(quiver, title="Field Magnitude", orientation='vertical')
     mlab.title(f"Magnetic Field at Step {step}", size=0.2)
 
+    # Find the vector magnitude at the origin
+    origin_index = np.argmin(np.abs(x) + np.abs(y) + np.abs(z))  # Closest index to origin
+    origin_magnitude = B_magnitude.flatten()[origin_index]  # Vector magnitude at origin
+
+    # Get the x, y, z coordinates of the origin
+    origin_coords = (x.flatten()[origin_index], y.flatten()[origin_index], z.flatten()[origin_index])
+
+    # Add custom text along with the vector magnitude at the origin
+    text = f"Magnitude in Milliteslas: {round(origin_magnitude, 6) * 1000}"
+    mlab.text3d(origin_coords[0], origin_coords[1], origin_coords[2], text, scale=0.01, color=(0, 0, 0))
+
     # Save the frame as an image
     frame_filename = os.path.join(output_folder, f"frame_{step:03d}.png")
     mlab.savefig(frame_filename)
