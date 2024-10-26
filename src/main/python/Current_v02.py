@@ -1,6 +1,6 @@
 import numpy as np
 
-def calculate_current(N_turns, L, points_per_turn, current1_mag, current2_mag, current3_mag, current4_mag):
+def calculate_current_flex(N_turns, L, points_per_turn, current_mag, model_choice):
     # Calculate total points to plot
     total_points = N_turns * points_per_turn
 
@@ -14,13 +14,22 @@ def calculate_current(N_turns, L, points_per_turn, current1_mag, current2_mag, c
 
     # Solenoid 1: Along the Z-axis (standard solenoid)
     current_base = np.column_stack((dx_helix, dy_helix, [0]*total_points))
+    if model_choice == "4S":
+        current1 = rotate_vector(current_base, 'y', np.pi / 4) * current_mag[0]
+        current2 = rotate_vector(current_base, 'y', -np.pi / 4) * current_mag[1]
+        current3 = rotate_vector(current1, 'z', np.pi / 3) * current_mag[2]
+        current4 = rotate_vector(current2, 'z', np.pi / 3) * current_mag[3]
 
-    current1 = rotate_vector(current_base, 'y', np.pi / 4)
-    current2 = rotate_vector(current_base, 'y', -np.pi / 4)
-    current3 = rotate_vector(current1, 'z', np.pi / 3)
-    current4 = rotate_vector(current2, 'z', np.pi / 3)
+        current = current1, current2, current3, current4
 
-    return current1 * current1_mag, current2 * current2_mag, current3 * current3_mag, current4 * current4_mag
+    else:
+        current1 = np.column_stack((dx_helix, dy_helix, [0] * total_points)) * current_mag[0]
+        current2 = np.column_stack(([0] * total_points, dy_helix, dx_helix)) * current_mag[1]
+        current3 = np.column_stack((dx_helix, [0] * total_points, dy_helix)) * current_mag[2]
+
+        current = current1, current2, current3
+
+    return current
 
 def rotate_vector(vector, axis, theta):
     """

@@ -2,9 +2,10 @@ import numpy as np
 from mayavi import mlab
 import imageio.v2 as imageio
 import os
-from src.main.python.Coil_v01 import generate_solenoid_points
-from src.main.python.Current_v01 import calculate_current
-from src.main.python.current_function_v01 import current_flow
+from src.main.python.current_function_v01 import current_mag_flex
+from src.main.python.Coil_v02 import generate_solenoid_points_flex
+from src.main.python.Current_v02 import calculate_current_flex
+
 
 # creating Grid, defining render density
 def setup_plot(Grid_density, Grid_size):
@@ -19,12 +20,6 @@ def solenoid_amnt_points(N_turns, points_per_turn):
 def r_magnitude(r):
     return np.linalg.norm(r)
 
-# calculate current direction and magnitude at certain point in time
-def current_at_time(N_turns, L, points_per_turn, step, time_steps, span_of_animation, Hz, rot_freq, I_max):
-    current1_mag, current2_mag, current3_mag = current_flow(time_steps, span_of_animation, Hz, rot_freq, I_max)
-    current1, current2, current3 = calculate_current(N_turns, L, points_per_turn, current1_mag[step], current2_mag[step], current3_mag[step])
-    return current1, current2, current3
-
 # take 3d current and radius and return 3d B-field
 def Biot_Savart_Law(mu_0, current, r):
     r_mag = np.linalg.norm(r)  # Magnitude of r vector
@@ -33,12 +28,19 @@ def Biot_Savart_Law(mu_0, current, r):
     return mu_0 * np.cross(current, r) / ((r_mag ** 3) * 4 * np.pi)
 
 # take B-field created by solenoids and add them up, return as Bx, By, Bz
-def superpositioning_of_Vector_fields(B1, B2, B3):
-    # extract and sum parts of vector fields
-    B_x = B1[..., 0] + B2[..., 0] + B3[..., 0]
-    B_y = B1[..., 1] + B2[..., 1] + B3[..., 1]
-    B_z = B1[..., 2] + B2[..., 2] + B3[..., 2]
-    return B_x, B_y, B_z
+def superpositioning_of_Vector_fields(B_fields):
+    # Initialize sums for each component (x, y, z) as the first field components
+    B_x_sum = B_fields[0][..., 0]
+    B_y_sum = B_fields[0][..., 1]
+    B_z_sum = B_fields[0][..., 2]
+
+    # Loop over the rest of the fields and add the components
+    for B in B_fields[1:]:
+        B_x_sum += B[..., 0]
+        B_y_sum += B[..., 1]
+        B_z_sum += B[..., 2]
+
+    return B_x_sum, B_y_sum, B_z_sum
 
 # calculating B-field for each solenoid
 def calculate_B_field(solenoid, current, x, y, z, N_turns, points_per_turn, mu_0):
@@ -81,7 +83,7 @@ def plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder):
     mlab.close()  # Close the figure for the next frame
 
 # Generate animation frames
-def generate_animation_frames(mu_0, N_turns, L, R, points_per_turn, shift_distance, I_max, Grid_density, time_steps, output_folder, span_of_animation, Hz, rot_freq, Grid_size):
+def generate_animation_frames(mu_0, N_turns, L, R, points_per_turn, shift_distance, I_max, Grid_density, time_steps, output_folder, span_of_animation, Hz, rot_freq, Grid_size, model_choice):
     # Create folder to store frames if not exist
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -89,21 +91,24 @@ def generate_animation_frames(mu_0, N_turns, L, R, points_per_turn, shift_distan
     # Create grid for vector field
     x, y, z = setup_plot(Grid_density, Grid_size)
 
-    # Generate solenoid coordinates
-    solenoid1, solenoid2, solenoid3 = generate_solenoid_points(N_turns, L, R, shift_distance, points_per_turn)
+    # Generate Solenoid points according to model choice
+    solenoid_points = generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn, model_choice)
+
+    # Calculate current magnitudes according to model choice
+    current_mag = np.array(current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice))
 
     # Loop through time steps and update the magnetic field
     for step in range(time_steps):
         # define current for each solenoid at point in time
-        current1, current2, current3 = current_at_time(N_turns, L, points_per_turn, step, time_steps, span_of_animation, Hz, rot_freq, I_max)
+        current = calculate_current_flex(N_turns, L, points_per_turn, current_mag[:,step], model_choice)
 
         # Calculate B-field for each solenoid
-        B1 = calculate_B_field(solenoid1, current1, x, y, z, N_turns, points_per_turn, mu_0)
-        B2 = calculate_B_field(solenoid2, current2, x, y, z, N_turns, points_per_turn, mu_0)
-        B3 = calculate_B_field(solenoid3, current3, x, y, z, N_turns, points_per_turn, mu_0)
+        B_fields = []
+        for i in range(len(solenoid_points)):
+            B_fields.append(calculate_B_field(solenoid_points[i], current[i], x, y, z, N_turns, points_per_turn, mu_0))
 
         # Sum the magnetic fields
-        Bx, By, Bz = superpositioning_of_Vector_fields(B1, B2, B3)
+        Bx, By, Bz = superpositioning_of_Vector_fields(B_fields)
 
         # Plot and save the magnetic field at this time step
         plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder)
