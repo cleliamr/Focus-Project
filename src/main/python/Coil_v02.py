@@ -31,7 +31,7 @@ def generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn
     else:
         solenoid1 = solenoid_base
         solenoid2 = rotate_vector(solenoid_base, 'y', np.pi / 2)
-        solenoid3 = rotate_vector(solenoid_base, 'x', np.pi / 2)
+        solenoid3 = rotate_vector(solenoid_base, 'x', -np.pi / 2)
         solenoid_points = solenoid1, solenoid2, solenoid3
 
     return solenoid_points

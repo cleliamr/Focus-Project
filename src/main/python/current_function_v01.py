@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice):
+def current_mag_old(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice):
     t = np.linspace(0, span_of_animation - 1, time_steps)
 
     current1 = np.zeros(time_steps)

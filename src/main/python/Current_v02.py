@@ -1,6 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
-def calculate_current_flex(N_turns, L, points_per_turn, current_mag, model_choice):
+def calculate_current_flex(N_turns, L, points_per_turn, model_choice):
     # Calculate total points to plot
     total_points = N_turns * points_per_turn
 
@@ -15,17 +16,17 @@ def calculate_current_flex(N_turns, L, points_per_turn, current_mag, model_choic
     # Solenoid 1: Along the Z-axis (standard solenoid)
     current_base = np.column_stack((dx_helix, dy_helix, [0]*total_points))
     if model_choice == "4S":
-        current1 = rotate_vector(current_base, 'y', np.pi / 4) * current_mag[0]
-        current2 = rotate_vector(current_base, 'y', -np.pi / 4) * current_mag[1]
-        current3 = rotate_vector(current1, 'z', np.pi / 3) * current_mag[2]
-        current4 = rotate_vector(current2, 'z', np.pi / 3) * current_mag[3]
+        current1 = rotate_vector(current_base, 'y', np.pi / 4)
+        current2 = rotate_vector(current_base, 'y', -np.pi / 4)
+        current3 = rotate_vector(current1, 'z', np.pi / 3)
+        current4 = rotate_vector(current2, 'z', np.pi / 3)
 
         current = current1, current2, current3, current4
 
     else:
-        current1 = np.column_stack((dx_helix, dy_helix, [0] * total_points)) * current_mag[0]
-        current2 = np.column_stack(([0] * total_points, dy_helix, dx_helix)) * current_mag[1]
-        current3 = np.column_stack((dx_helix, [0] * total_points, dy_helix)) * current_mag[2]
+        current1 = current_base
+        current2 = rotate_vector(current_base, 'y', np.pi / 2)
+        current3 = rotate_vector(current_base, 'x', -np.pi / 2)
 
         current = current1, current2, current3
 
@@ -75,3 +76,29 @@ def rotate_vector(vector, axis, theta):
     rotated_vector = np.dot(vector, rotation_matrix.T)
 
     return rotated_vector
+
+def plot_solenoid_currents(solenoid_points, current_directions):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Iterate through each solenoid
+    for i, (points, currents) in enumerate(zip(solenoid_points, current_directions)):
+        # Extract the x, y, z coordinates for each solenoid's points
+        x_points = points[:, 0]
+        y_points = points[:, 1]
+        z_points = points[:, 2]
+
+        # Extract the x, y, z components of the current direction for each point
+        u = currents[:, 0]  # x-component of current direction
+        v = currents[:, 1]  # y-component of current direction
+        w = currents[:, 2]  # z-component of current direction
+
+        # Plot the current direction as arrows at each point along the solenoid
+        ax.quiver(x_points, y_points, z_points, u, v, w, length=1, normalize=True)
+
+    # Label axes
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+    plt.title("Current Direction Along Solenoids")
+    plt.show()
