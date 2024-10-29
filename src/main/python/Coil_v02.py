@@ -1,14 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-N_turns = 10  # Number of turns
-L = 0.1  # 10 cm length
-R = 0.01  # 1 cm radius
-points_per_turn = 50  # points rendered
-shift_distance = 0.2 # distance to focus point
-
 # Function to generate points for the solenoids
-def generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn, model_choice):
+def generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp):
     # Calculate total points to plot
     total_points = N_turns * points_per_turn
 
@@ -23,15 +17,16 @@ def generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn
     # Solenoid Base: Along the Z-axis (standard solenoid)
     solenoid_base = np.column_stack((x_helix, y_helix, z + shift_distance))
     if model_choice == "4S":
-        solenoid1 = rotate_vector(solenoid_base, 'y', np.pi / 4)
-        solenoid2 = rotate_vector(solenoid_base, 'y', -np.pi / 4)
-        solenoid3 = rotate_vector(solenoid1, 'z', np.pi / 3)
-        solenoid4 = rotate_vector(solenoid2, 'z', np.pi / 3)
+        # define solenoid points for Coils
+        solenoid1 = rotate_vector(solenoid_base, 'y', angle_opp / 2)
+        solenoid2 = rotate_vector(solenoid_base, 'y', -angle_opp / 2)
+        solenoid3 = rotate_vector(solenoid1, 'z', angle_adj / 2)
+        solenoid4 = rotate_vector(solenoid2, 'z', angle_adj / 2)
         solenoid_points = solenoid1, solenoid2, solenoid3, solenoid4
     else:
         solenoid1 = solenoid_base
-        solenoid2 = rotate_vector(solenoid_base, 'y', np.pi / 2)
-        solenoid3 = rotate_vector(solenoid_base, 'x', -np.pi / 2)
+        solenoid2 = rotate_vector(solenoid_base, 'y', angle)
+        solenoid3 = rotate_vector(solenoid_base, 'x', -angle)
         solenoid_points = solenoid1, solenoid2, solenoid3
 
     return solenoid_points

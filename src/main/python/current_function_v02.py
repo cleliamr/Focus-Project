@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice):
-    t = np.linspace(0, span_of_animation, time_steps)
+def current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice, angle, angle_adj, angle_opp):
+    t = np.linspace(0, span_of_animation - 1, time_steps)
 
     current1 = np.zeros(time_steps)
     current2 = np.zeros(time_steps)
@@ -17,7 +17,7 @@ def current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_c
         current_mag = np.array([current1, current2, current3])
     else:
         for i in range(len(t)):
-            current1[i], current2[i], current3[i], current4[i] = current_magnitude_4S(rot_freq, t[i], Hz, I_max)
+            current1[i], current2[i], current3[i], current4[i] = current_magnitude_4S(rot_freq, t[i], Hz, I_max, angle_adj, angle_opp)
         current_mag = np.array([current1, current2, current3, current4])
 
     return current_mag
@@ -39,49 +39,54 @@ def current_magnitude_3S(rot_freq, t, Hz):
 
     return current_magnitude * np.sin(t_state * Hz * np.pi)
 
-def current_magnitude_4S(rot_freq, t, Hz, I_max):
+def current_magnitude_4S(rot_freq, t, Hz, I_max, angle_adj, angle_opp):
     t_state = t % rot_freq
 
+    current1 = np.sin(np.pi * Hz * t)
+
     if t_state < rot_freq / 6:
-        current1 = np.sin(np.pi * Hz * t)
         current2 = np.sin(np.pi * (Hz * t - 1))
-        current3 = np.sin(np.pi * (Hz * t - 1 / 3))
-        current4 = np.sin(np.pi * (Hz * t - (1 + 1 / 3)))
+        current3 = np.sin(np.pi * (Hz * t) - angle_adj)
+        current4 = np.sin(np.pi * (Hz * t - 1) - angle_adj)
 
     elif t_state <  rot_freq / 3:
-        offset = (t_state - (rot_freq / 3)) // 2
-        current1 = np.sin(np.pi * Hz * t)
-        current2 = np.sin(np.pi * (Hz * t - 1 + (offset/20)))
-        current3 = np.sin(np.pi * (Hz * t - (1/3) + (offset/30)))
-        current4 = np.sin(np.pi * (Hz * t - (4/3) + (5 * offset/40)))
+        t_state1 = (t_state - (rot_freq / 6))
+        offset = offset_calc(t_state1, rot_freq)
+
+        current2 = np.sin(np.pi * (Hz * t - 1) + offset * (np.pi - angle_opp))
+        current3 = np.sin(np.pi * (Hz * t) + angle_adj * (offset - 1))
+        current4 = np.sin(np.pi * (Hz * t - 1) - angle_adj + offset * (np.pi + angle_adj - angle_opp))
 
     elif t_state < rot_freq / 2:
-        current1 = np.sin(np.pi * Hz * t)
-        current2 = np.sin(np.pi * (Hz * t - (1/2)))
+        current2 = np.sin(np.pi * (Hz * t) - angle_opp)
         current3 = current1
         current4 = current2
 
     elif t_state < 2 * rot_freq / 3:
-        offset = (t_state - (rot_freq / 3)) // 2
-        current1 = np.sin(np.pi * Hz * t)
+        t_state1 = (t_state - (rot_freq / 2))
+        offset = offset_calc(t_state1, rot_freq)
+
         current2 = np.sin(np.pi * (Hz * t - (1/2) + (offset/60)))
         current3 = np.sin(np.pi * (Hz * t - (offset/30)))
         current4 = np.sin(np.pi * (Hz * t + (offset/20)))
 
     elif t_state < 5 * rot_freq / 6:
-        current1 = np.sin(np.pi * Hz * t)
-        current2 = np.sin(np.pi * (Hz * t - (1/3)))
+        current2 = np.sin(np.pi * (Hz * t) - angle_adj)
         current3 = current2
         current4 = current1
 
     else:
-        offset = (t_state - (5 *rot_freq / 6)) // 2
-        current1 = np.sin(np.pi * Hz * t)
-        current2 = np.sin(np.pi * (Hz * t - (1/2 + offset/20)))
-        current3 = np.sin(np.pi * (Hz * t - 1 / 3))
-        current4 = np.sin(np.pi * (Hz * t - (4 * offset / 30)))
+        t_state1 = (t_state - (5 * rot_freq / 6))
+        offset = offset_calc(t_state1, rot_freq)
+
+        current2 = np.sin(np.pi * (Hz * t) - angle_adj + offset * (angle_adj - np.pi))
+        current3 = np.sin(np.pi * (Hz * t) - angle_adj)
+        current4 = np.sin(np.pi * (Hz * t) - offset * (1 + angle_adj))
 
     return current1 * I_max, current2 * I_max, current3 * I_max, current4 * I_max
+
+def offset_calc(t_state1, rot_freq ):
+    return t_state1 / (rot_freq / 6)
 
 def plot_current_single(current1, t):
     fig, ax = plt.subplots()

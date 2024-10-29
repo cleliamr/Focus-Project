@@ -82,7 +82,7 @@ def plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder):
     mlab.close()  # Close the figure for the next frame
 
 # Generate animation frames
-def generate_animation_frames(mu_0, N_turns, L, R, points_per_turn, shift_distance, I_max, Grid_density, time_steps, output_folder, span_of_animation, Hz, rot_freq, Grid_size, model_choice):
+def generate_animation_frames(mu_0, N_turns, L, R, points_per_turn, shift_distance, I_max, Grid_density, time_steps, output_folder, span_of_animation, Hz, rot_freq, Grid_size, model_choice, angle, angle_adj, angle_opp):
     # Create folder to store frames if not exist
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
@@ -91,12 +91,12 @@ def generate_animation_frames(mu_0, N_turns, L, R, points_per_turn, shift_distan
     x, y, z = setup_plot(Grid_density, Grid_size)
 
     # Generate Solenoid points according to model choice
-    solenoid_points = generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn, model_choice)
+    solenoid_points = generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp)
 
     # Calculate current magnitudes according to model choice
-    current_mag = np.array(current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice))
+    current_mag = np.array(current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice, angle, angle_adj, angle_opp))
 
-    current = calculate_current_flex(N_turns, L, points_per_turn, model_choice)
+    current = calculate_current_flex(N_turns, L, points_per_turn, model_choice, angle, angle_adj, angle_opp)
     # Loop through time steps and update the magnetic field
     for step in range(time_steps):
         # Calculate B-field for each solenoid

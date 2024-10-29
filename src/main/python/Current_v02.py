@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def calculate_current_flex(N_turns, L, points_per_turn, model_choice):
+def calculate_current_flex(N_turns, L, points_per_turn, model_choice, angle, angle_adj, angle_opp):
     # Calculate total points to plot
     total_points = N_turns * points_per_turn
 
@@ -16,17 +16,17 @@ def calculate_current_flex(N_turns, L, points_per_turn, model_choice):
     # Solenoid 1: Along the Z-axis (standard solenoid)
     current_base = np.column_stack((dx_helix, dy_helix, [0]*total_points))
     if model_choice == "4S":
-        current1 = rotate_vector(current_base, 'y', np.pi / 4)
-        current2 = rotate_vector(current_base, 'y', -np.pi / 4)
-        current3 = rotate_vector(current1, 'z', np.pi / 3)
-        current4 = rotate_vector(current2, 'z', np.pi / 3)
+        current1 = rotate_vector(current_base, 'y', angle_opp / 2)
+        current2 = rotate_vector(current_base, 'y', -angle_opp / 2)
+        current3 = rotate_vector(current1, 'z', angle_adj)
+        current4 = rotate_vector(current2, 'z', angle_adj)
 
         current = current1, current2, current3, current4
 
     else:
         current1 = current_base
-        current2 = rotate_vector(current_base, 'y', np.pi / 2)
-        current3 = rotate_vector(current_base, 'x', -np.pi / 2)
+        current2 = rotate_vector(current_base, 'y', angle)
+        current3 = rotate_vector(current_base, 'x', -angle)
 
         current = current1, current2, current3
 
