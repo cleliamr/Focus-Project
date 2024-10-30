@@ -1,11 +1,44 @@
 import numpy as np
 from mayavi import mlab
-import imageio.v2 as imageio
 import os
+import threading
+import imageio.v2 as imageio
+from multiprocessing import Pool
+from functools import partial
 from src.main.python.current_function_v02 import current_mag_flex
 from src.main.python.Coil_v02 import generate_solenoid_points_flex
 from src.main.python.Current_v02 import calculate_current_flex
+from config import mu_0, N_turns, L, R, points_per_turn, shift_distance, I_max, Grid_density, Grid_size, time_steps, \
+  output_folder, video_filename, span_of_animation, Hz, rot_freq, angle, angle_adj, angle_opp
 
+# calculate solenoid points - multithreading
+def generate_solenoid_points_task(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp):
+    solenoid_points = generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp)
+    return solenoid_points
+
+# calculate current magnitude - multithreading
+def calculate_current_mag_task(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice, angle, angle_adj, angle_opp):
+    current_mag = np.array(current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice, angle, angle_adj, angle_opp))
+    return current_mag
+
+# calculate current direction - multithreading
+def calculate_current_task(N_turns, L, points_per_turn, model_choice, angle, angle_adj, angle_opp):
+    current = calculate_current_flex(N_turns, L, points_per_turn, model_choice, angle, angle_adj, angle_opp)
+    return current
+
+# function to calc, superposition and plot B-field - called with multiprocessing
+def calculate_superposition_plot_Bfield_task(solenoid_points, current_mag, current, x, y, z, animation_steps):
+    # Calculate B-field for each solenoid
+    B_fields = []
+    print(animation_steps)
+    for i in range(len(solenoid_points)):
+        B_fields.append(calculate_B_field(solenoid_points[i], current[i], current_mag[i, animation_steps], N_turns, points_per_turn, mu_0, x, y, z))
+
+    # Sum the magnetic fields
+    Bx, By, Bz = superpositioning_of_Vector_fields(B_fields)
+
+    # Plot and save the magnetic field at this time step
+    plot_magnetic_field(x, y, z, Bx, By, Bz, animation_steps, output_folder)
 
 # creating Grid, defining render density
 def setup_plot(Grid_density, Grid_size):
@@ -42,7 +75,7 @@ def superpositioning_of_Vector_fields(B_fields):
     return B_x, B_y, B_z
 
 # calculating B-field for each solenoid
-def calculate_B_field(solenoid, current, mag, x, y, z, N_turns, points_per_turn, mu_0):
+def calculate_B_field(solenoid, current, mag, N_turns, points_per_turn, mu_0, x, y, z):
     # Initialize B1_single as a 3D array (same shape as x, y, z) to store 3D vectors
     B = np.zeros((x.shape[0], x.shape[1], x.shape[2], 3))  # (nx, ny, nz, 3) for 3D vectors
 
@@ -81,36 +114,51 @@ def plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder):
     mlab.savefig(frame_filename, size=(1920, 1080))
     mlab.close()  # Close the figure for the next frame
 
-# Generate animation frames
-def generate_animation_frames(mu_0, N_turns, L, R, points_per_turn, shift_distance, I_max, Grid_density, time_steps, output_folder, span_of_animation, Hz, rot_freq, Grid_size, model_choice, angle, angle_adj, angle_opp):
+# Generates frames of animation
+def setup_animation_frames(model_choice):
     # Create folder to store frames if not exist
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
     # Create grid for vector field
     x, y, z = setup_plot(Grid_density, Grid_size)
+    # Set up base for B-Field
+    solenoid_points = generate_solenoid_points_task(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp)
+    current = calculate_current_task(N_turns, L, points_per_turn, model_choice, angle, angle_adj, angle_opp)
+    current_mag = calculate_current_mag_task(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice, angle, angle_adj, angle_opp)
+    """
+    # threads to generate solenoid points, current magnitude functions and current vectors
+    solenoid_thread = threading.Thread(target=generate_solenoid_points_task, args=(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp))
+    current_mag_thread = threading.Thread(target=calculate_current_mag_task, args=(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice, angle, angle_adj, angle_opp))
+    current_thread = threading.Thread(target=calculate_current_task, args=(N_turns, L, points_per_turn, model_choice, angle, angle_adj, angle_opp))
+    
+    # Start the threads
+    solenoid_thread.start()
+    current_mag_thread.start()
+    current_thread.start()
+    
+    # Wait for all threads to complete
+    solenoid_thread.join()
+    current_mag_thread.join()
+    current_thread.join()
+    """
 
-    # Generate Solenoid points according to model choice
-    solenoid_points = generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp)
+    return solenoid_points, current, current_mag, x, y, z
 
-    # Calculate current magnitudes according to model choice
-    current_mag = np.array(current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice, angle, angle_adj, angle_opp))
 
-    current = calculate_current_flex(N_turns, L, points_per_turn, model_choice, angle, angle_adj, angle_opp)
-    # Loop through time steps and update the magnetic field
-    for step in range(time_steps):
-        # Calculate B-field for each solenoid
-        B_fields = []
-        for i in range(len(solenoid_points)):
-            B_fields.append(calculate_B_field(solenoid_points[i], current[i], current_mag[i, step], x, y, z, N_turns, points_per_turn, mu_0))
-        # Sum the magnetic fields
-        Bx, By, Bz = superpositioning_of_Vector_fields(B_fields)
 
-        # Plot and save the magnetic field at this time step
-        plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder)
+# calculate, superposition, plot B-Field using animation_steps as variable over which to distribute calculation
+def run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y, z):
+    animation_steps = range(time_steps)
+    task_function = partial(calculate_superposition_plot_Bfield_task, solenoid_points, current_mag, current, x, y, z)
+
+    with Pool() as pool:
+        pool.map(task_function, animation_steps)
+        pool.close()
+        pool.join()
 
 # Create video from saved frames
-def create_video_from_frames(time_steps, output_folder, video_filename):
+def create_video_from_frames():
     images = []
     for step in range(time_steps):
         frame_filename = os.path.join(output_folder, f"frame_{step:03d}.png")

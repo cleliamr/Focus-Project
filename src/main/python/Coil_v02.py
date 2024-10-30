@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from Coil_v01 import plot_solenoids
 
 # Function to generate points for the solenoids
 def generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp):
@@ -23,11 +24,16 @@ def generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn
         solenoid3 = rotate_vector(solenoid1, 'z', angle_adj / 2)
         solenoid4 = rotate_vector(solenoid2, 'z', angle_adj / 2)
         solenoid_points = solenoid1, solenoid2, solenoid3, solenoid4
+
+        plot_solenoids_4S(solenoid1, solenoid2, solenoid3, solenoid4)
+
     else:
         solenoid1 = solenoid_base
         solenoid2 = rotate_vector(solenoid_base, 'y', angle)
         solenoid3 = rotate_vector(solenoid_base, 'x', -angle)
         solenoid_points = solenoid1, solenoid2, solenoid3
+
+        plot_solenoids(solenoid1, solenoid2, solenoid3)
 
     return solenoid_points
 

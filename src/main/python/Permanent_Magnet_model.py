@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import imageio.v2 as imageio
 from config import mu_0, time_steps, video_filename, Hz, magnet_center, magnet_moment, magnet_dimensions, Grid_density, output_folder, Grid_size
 
-
 # creating Grid, defining render density
 def setup_plot(Grid_density, Grid_size):
     x, y, z = np.mgrid[-Grid_size:Grid_size:Grid_density , -Grid_size:Grid_size:Grid_density, -Grid_size:Grid_size:Grid_density]
@@ -31,7 +30,7 @@ def magnet_moment_position(magnet_moment, time_steps, Hz, magnet_volume):
     magnet_orientations = np.zeros((time_steps, 3))
     t = np.linspace(0, (time_steps // 10) - 1, time_steps)
 
-    theta = (Hz / 10) * (2 * np.pi) * t
+    theta = Hz * 2 * np.pi * t
 
     for i in range(time_steps):
         magnet_orientations[i] = rotate_vector(magnet_moment, 'z', theta[i]) * magnet_volume
@@ -92,7 +91,7 @@ def plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder):
     mlab.close()  # Close the figure for the next frame
 
 # Create video from saved frames
-def create_video_from_frames():
+def create_video_from_frames_pmodel():
     images = []
     for step in range(time_steps):
         frame_filename = os.path.join(output_folder, f"frame_{step:03d}.png")
@@ -149,7 +148,7 @@ def rotate_vector(vector, axis, theta):
     return rotated_vector
 
 # Generate animation frames
-def generate_animation_frames():
+def generate_animation_frames_pmodel():
     # Create folder to store frames if not exist
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
