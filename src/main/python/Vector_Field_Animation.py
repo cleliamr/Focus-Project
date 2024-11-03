@@ -3,7 +3,7 @@ from mayavi import mlab
 import os
 import threading
 import imageio.v2 as imageio
-from multiprocessing import Pool
+from multiprocessing import Pool, shared_memory
 from functools import partial
 from src.main.python.current_function_v02 import current_mag_flex
 from src.main.python.Coil_v02 import generate_solenoid_points_flex
@@ -27,7 +27,17 @@ def calculate_current_task(N_turns, L, points_per_turn, model_choice, angle, ang
     return current
 
 # function to calc, superposition and plot B-field - called with multiprocessing
-def calculate_superposition_plot_Bfield_task(solenoid_points, current_mag, current, x, y, z, animation_steps):
+def calculate_superposition_plot_Bfield_task(shm_solenoid_points_name, shm_current_mag_name, shm_current_name, solenoid_points_shape, current_mag_shape, current_shape, x, y, z, animation_steps):
+    # define the shared memory
+    shm_solenoid_points = shared_memory.SharedMemory(name=shm_solenoid_points_name)
+    shm_current_mag = shared_memory.SharedMemory(name=shm_current_mag_name)
+    shm_current = shared_memory.SharedMemory(name=shm_current_name)
+
+    # create NumPy arrays backed by shared memory
+    solenoid_points = np.ndarray(solenoid_points_shape, dtype=np.float64, buffer = shm_solenoid_points.buf)
+    current_mag = np.ndarray(current_mag_shape, dtype=np.float64, buffer=shm_current_mag.buf)
+    current = np.ndarray(current_shape, dtype=np.float64, buffer=shm_current.buf)
+
     # Calculate B-field for each solenoid
     B_fields = []
     print(animation_steps)
@@ -39,6 +49,11 @@ def calculate_superposition_plot_Bfield_task(solenoid_points, current_mag, curre
 
     # Plot and save the magnetic field at this time step
     plot_magnetic_field(x, y, z, Bx, By, Bz, animation_steps, output_folder)
+
+    # Close shared memory in the worker process
+    shm_solenoid_points.close()
+    shm_current_mag.close()
+    shm_current.close()
 
 # creating Grid, defining render density
 def setup_plot(Grid_density, Grid_size):
@@ -123,9 +138,9 @@ def setup_animation_frames(model_choice):
     # Create grid for vector field
     x, y, z = setup_plot(Grid_density, Grid_size)
     # Set up base for B-Field
-    solenoid_points = generate_solenoid_points_task(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp)
-    current = calculate_current_task(N_turns, L, points_per_turn, model_choice, angle, angle_adj, angle_opp)
-    current_mag = calculate_current_mag_task(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice, angle, angle_adj, angle_opp)
+    solenoid_points = np.array(generate_solenoid_points_task(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp))
+    current = np.array(calculate_current_task(N_turns, L, points_per_turn, model_choice, angle, angle_adj, angle_opp))
+    current_mag = np.array(calculate_current_mag_task(time_steps, span_of_animation, Hz, rot_freq, I_max, model_choice, angle, angle_adj, angle_opp))
     """
     # threads to generate solenoid points, current magnitude functions and current vectors
     solenoid_thread = threading.Thread(target=generate_solenoid_points_task, args=(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp))
@@ -149,13 +164,38 @@ def setup_animation_frames(model_choice):
 
 # calculate, superposition, plot B-Field using animation_steps as variable over which to distribute calculation
 def run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y, z):
+    # define variable over which to run the MP
     animation_steps = range(time_steps)
-    task_function = partial(calculate_superposition_plot_Bfield_task, solenoid_points, current_mag, current, x, y, z)
+
+    # create shared memory for solenoid_points, current_mag and current
+    shm_solenoid_points = shared_memory.SharedMemory(create=True, size=solenoid_points.nbytes)
+    shm_current_mag = shared_memory.SharedMemory(create=True, size=current_mag.nbytes)
+    shm_current = shared_memory.SharedMemory(create=True, size=current.nbytes)
+
+    # copy the date into shared memory
+    solenoid_points_shm = np.ndarray(solenoid_points.shape, dtype=solenoid_points.dtype, buffer=shm_solenoid_points.buf)
+    current_mag_shm = np.ndarray(current_mag.shape, dtype=current_mag.dtype, buffer=shm_current_mag.buf)
+    current_shm = np.ndarray(current.shape, dtype=current.dtype, buffer=shm_current.buf)
+
+    solenoid_points_shm[:] = solenoid_points[:]
+    current_mag_shm[:] = current_mag[:]
+    current_shm[:] = current[:]
+
+    # prepare partial functions, predefining variables
+    task_function = partial(calculate_superposition_plot_Bfield_task, shm_solenoid_points.name, shm_current_mag.name, shm_current.name, solenoid_points.shape, current_mag.shape, current.shape, x, y, z)
 
     with Pool() as pool:
-        pool.map(task_function, animation_steps)
+        pool.map(func=task_function, iterable=animation_steps)
         pool.close()
         pool.join()
+
+    # clean up the share memory in the main process
+    shm_solenoid_points.close()
+    shm_solenoid_points.unlink()
+    shm_current_mag.close()
+    shm_current_mag.unlink()
+    shm_current.close()
+    shm_current.unlink()
 
 # Create video from saved frames
 def create_video_from_frames():
