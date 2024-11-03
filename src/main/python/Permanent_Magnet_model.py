@@ -41,6 +41,7 @@ def magnet_moment_position(magnet_moment, time_steps, Hz, magnet_volume):
 def calc_magnet_volume(magnet_dimensions):
     magnet_volume = magnet_dimensions[0] * magnet_dimensions[1] * magnet_dimensions[2]
     return magnet_volume
+
 # Function to calculate magnetic field at a point due to a single magnet
 def calculate_magnetic_field(r, magnet_moment):
     r_mag = np.linalg.norm(r)
@@ -156,7 +157,7 @@ def generate_animation_frames_pmodel():
     # Create grid for vector field
     x, y, z = setup_plot(Grid_density, Grid_size)
 
-    # caculate magnets volume
+    # calculate magnets volume
     magnet_volume = calc_magnet_volume(magnet_dimensions)
 
     # define magnetisation orientation over time

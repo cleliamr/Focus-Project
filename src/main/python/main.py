@@ -14,7 +14,8 @@ if __name__ == '__main__':
     solenoid_points, current, current_mag, x, y, z = setup_animation_frames(model_choice)
 
     # run multiprocessing
-    run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y, z)
+    B_over_time = run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y, z)
+    print(B_over_time)
 
     # create video / animation from frames
     create_video_from_frames()

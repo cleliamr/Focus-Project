@@ -9,7 +9,7 @@ from src.main.python.current_function_v02 import current_mag_flex
 from src.main.python.Coil_v02 import generate_solenoid_points_flex
 from src.main.python.Current_v02 import calculate_current_flex
 from config import mu_0, N_turns, L, R, points_per_turn, shift_distance, I_max, Grid_density, Grid_size, time_steps, \
-  output_folder, video_filename, span_of_animation, Hz, rot_freq, angle, angle_adj, angle_opp
+  output_folder, video_filename, span_of_animation, Hz, rot_freq, angle, angle_adj, angle_opp, dl
 
 # calculate solenoid points - multithreading
 def generate_solenoid_points_task(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp):
@@ -27,16 +27,18 @@ def calculate_current_task(N_turns, L, points_per_turn, model_choice, angle, ang
     return current
 
 # function to calc, superposition and plot B-field - called with multiprocessing
-def calculate_superposition_plot_Bfield_task(shm_solenoid_points_name, shm_current_mag_name, shm_current_name, solenoid_points_shape, current_mag_shape, current_shape, x, y, z, animation_steps):
+def calculate_superposition_plot_Bfield_task(shm_solenoid_points_name, shm_current_mag_name, shm_current_name, solenoid_points_shape, current_mag_shape, current_shape, x, y, z, shm_B_over_time_name, B_over_time_shape, animation_steps):
     # define the shared memory
     shm_solenoid_points = shared_memory.SharedMemory(name=shm_solenoid_points_name)
     shm_current_mag = shared_memory.SharedMemory(name=shm_current_mag_name)
     shm_current = shared_memory.SharedMemory(name=shm_current_name)
+    shm_B_over_time = shared_memory.SharedMemory(name=shm_B_over_time_name)
 
     # create NumPy arrays backed by shared memory
     solenoid_points = np.ndarray(solenoid_points_shape, dtype=np.float64, buffer = shm_solenoid_points.buf)
     current_mag = np.ndarray(current_mag_shape, dtype=np.float64, buffer=shm_current_mag.buf)
     current = np.ndarray(current_shape, dtype=np.float64, buffer=shm_current.buf)
+    B_over_time = np.ndarray(B_over_time_shape, dtype=np.float64, buffer=shm_B_over_time.buf)
 
     # Calculate B-field for each solenoid
     B_fields = []
@@ -46,6 +48,12 @@ def calculate_superposition_plot_Bfield_task(shm_solenoid_points_name, shm_curre
 
     # Sum the magnetic fields
     Bx, By, Bz = superpositioning_of_Vector_fields(B_fields)
+
+    # save the Bx, By, Bz values in a array to later plot
+    if Grid_density > (Grid_size * 4):
+        B_over_time[animation_steps, 0] = Bx
+        B_over_time[animation_steps, 1] = By
+        B_over_time[animation_steps, 2] = Bz
 
     # Plot and save the magnetic field at this time step
     plot_magnetic_field(x, y, z, Bx, By, Bz, animation_steps, output_folder)
@@ -73,7 +81,7 @@ def Biot_Savart_Law(mu_0, current, r, I_mag):
     r_mag = np.linalg.norm(r)  # Magnitude of r vector
     if r_mag == 0:
         return np.array([0, 0, 0])  # To avoid division by zero
-    return I_mag * mu_0 * np.cross(current, r) / ((r_mag ** 3) * 4 * np.pi)
+    return I_mag * dl * mu_0 * np.cross(current, r) / ((r_mag ** 3) * 4 * np.pi)
 
 # take B-field created by solenoids and add them up, return as Bx, By, Bz
 def superpositioning_of_Vector_fields(B_fields):
@@ -108,7 +116,7 @@ def calculate_B_field(solenoid, current, mag, N_turns, points_per_turn, mu_0, x,
 def plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder):
     B_magnitude = np.sqrt(Bx ** 2 + By ** 2 + Bz ** 2)
     mlab.figure(size=(1920, 1080), bgcolor=(1, 1, 1))  # Create a white background figure
-    quiver = mlab.quiver3d(x, y, z, Bx, By, Bz, scalars=B_magnitude, scale_factor=500, colormap='jet')
+    quiver = mlab.quiver3d(x, y, z, Bx, By, Bz, scalars=B_magnitude, scale_factor=250, colormap='jet')
     mlab.view(azimuth=45, elevation=45, distance=1)
     mlab.colorbar(quiver, title="Field Magnitude", orientation='vertical')
     mlab.title(f"Magnetic Field at Step {step}", size=0.2)
@@ -166,28 +174,35 @@ def setup_animation_frames(model_choice):
 def run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y, z):
     # define variable over which to run the MP
     animation_steps = range(time_steps)
+    B_over_time = np.zeros((time_steps, 3))
 
     # create shared memory for solenoid_points, current_mag and current
     shm_solenoid_points = shared_memory.SharedMemory(create=True, size=solenoid_points.nbytes)
     shm_current_mag = shared_memory.SharedMemory(create=True, size=current_mag.nbytes)
     shm_current = shared_memory.SharedMemory(create=True, size=current.nbytes)
+    shm_B_over_time = shared_memory.SharedMemory(create=True, size=B_over_time.nbytes)
 
     # copy the date into shared memory
     solenoid_points_shm = np.ndarray(solenoid_points.shape, dtype=solenoid_points.dtype, buffer=shm_solenoid_points.buf)
     current_mag_shm = np.ndarray(current_mag.shape, dtype=current_mag.dtype, buffer=shm_current_mag.buf)
     current_shm = np.ndarray(current.shape, dtype=current.dtype, buffer=shm_current.buf)
+    B_over_time_shm = np.ndarray(B_over_time.shape, dtype=B_over_time.dtype, buffer=shm_B_over_time.buf)
 
     solenoid_points_shm[:] = solenoid_points[:]
     current_mag_shm[:] = current_mag[:]
     current_shm[:] = current[:]
+    B_over_time_shm = B_over_time[:]
 
     # prepare partial functions, predefining variables
-    task_function = partial(calculate_superposition_plot_Bfield_task, shm_solenoid_points.name, shm_current_mag.name, shm_current.name, solenoid_points.shape, current_mag.shape, current.shape, x, y, z)
+    task_function = partial(calculate_superposition_plot_Bfield_task, shm_solenoid_points.name, shm_current_mag.name, shm_current.name, solenoid_points.shape, current_mag.shape, current.shape, x, y, z, shm_B_over_time.name, B_over_time.shape)
 
     with Pool() as pool:
         pool.map(func=task_function, iterable=animation_steps)
         pool.close()
         pool.join()
+
+    # save results in B_over_time variable
+    B_over_time = B_over_time_shm
 
     # clean up the share memory in the main process
     shm_solenoid_points.close()
@@ -196,6 +211,11 @@ def run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y,
     shm_current_mag.unlink()
     shm_current.close()
     shm_current.unlink()
+    shm_B_over_time.close()
+    shm_B_over_time.unlink()
+
+    return B_over_time
+
 
 # Create video from saved frames
 def create_video_from_frames():
@@ -205,5 +225,5 @@ def create_video_from_frames():
         images.append(imageio.imread(frame_filename))
 
     # Save frames as a video
-    imageio.mimsave(video_filename, images, fps=5)  # Adjust fps for desired speed
+    imageio.mimsave(video_filename, images, fps=10)  # Adjust fps for desired speed
     print(f"Video saved as {video_filename}")
