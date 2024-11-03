@@ -9,7 +9,12 @@ def current_mag_flex(time_steps, span_of_animation, Hz, rot_freq, I_max, model_c
     current3 = np.zeros(time_steps)
     current4 = np.zeros(time_steps)
 
-    if model_choice == "3S":
+    if model_choice == "2S":
+        current1 = np.sin(2 * np.pi * Hz * t)
+        current2 = np.cos(2 * np.pi * Hz * t)
+        current_mag = np.array([current1, current2])
+
+    elif model_choice == "3S":
         for i in range(len(t)):
             current1[i] = current_magnitude_3S(rot_freq, t[i], Hz) * I_max
             current2[i] = current_magnitude_3S(rot_freq, t[i] - (rot_freq / 3 - Hz / 2), Hz) * I_max

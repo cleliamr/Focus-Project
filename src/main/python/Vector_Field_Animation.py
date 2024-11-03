@@ -108,7 +108,7 @@ def calculate_B_field(solenoid, current, mag, N_turns, points_per_turn, mu_0, x,
 def plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder):
     B_magnitude = np.sqrt(Bx ** 2 + By ** 2 + Bz ** 2)
     mlab.figure(size=(1920, 1080), bgcolor=(1, 1, 1))  # Create a white background figure
-    quiver = mlab.quiver3d(x, y, z, Bx, By, Bz, scalars=B_magnitude, scale_factor=50, colormap='jet')
+    quiver = mlab.quiver3d(x, y, z, Bx, By, Bz, scalars=B_magnitude, scale_factor=500, colormap='jet')
     mlab.view(azimuth=45, elevation=45, distance=1)
     mlab.colorbar(quiver, title="Field Magnitude", orientation='vertical')
     mlab.title(f"Magnetic Field at Step {step}", size=0.2)

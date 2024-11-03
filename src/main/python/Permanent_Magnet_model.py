@@ -166,16 +166,20 @@ def generate_animation_frames_pmodel():
     By_over_time = np.zeros(time_steps)
     Bz_over_time = np.zeros(time_steps)
 
+    # check for single point grid:
+    single_point = False
+    if Grid_density > (Grid_size * 4):
+        single_point = True
     # Loop through time steps and update the magnetic field
     for step in range(time_steps):
         # Calculate B-field for each solenoid
         Bx, By, Bz = calculate_B_field_in_room(magnet_center, magnet_orientations[step], x, y, z)
+        if single_point:
+            Bx_over_time[step] = Bx
+            By_over_time[step] = By
+            Bz_over_time[step] = Bz
 
-        Bx_over_time[step] = Bx
-        By_over_time[step] = By
-        Bz_over_time[step] = Bz
-
-        # Plot and save the magnetic field at this time step
-        plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder)
+            # Plot and save the magnetic field at this time step
+            plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder)
 
     plot_B_over_time(Bx_over_time, By_over_time, Bz_over_time, time_steps)
