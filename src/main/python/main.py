@@ -1,5 +1,7 @@
 from Vector_Field_Animation import setup_animation_frames, create_video_from_frames, run_multiprocessing
+from B_field_analysis import B_field_analysis
 from config import time_steps
+import numpy as np
 
 from Permanent_Magnet_model import generate_animation_frames_pmodel, create_video_from_frames_pmodel
 
@@ -10,12 +12,14 @@ if __name__ == '__main__':
     while model_choice not in ("4S", "3S", "2S"):
         model_choice = input("Choose between '4S', '3S' and '2S' Model: ")
 
-    # Generate setup and create the video
+    # Generate setup
     solenoid_points, current, current_mag, x, y, z = setup_animation_frames(model_choice)
 
     # run multiprocessing
     B_over_time = run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y, z)
-    print(B_over_time)
+
+    # output analysis of B-field over time
+    B_field_analysis(B_over_time)
 
     # create video / animation from frames
     create_video_from_frames()

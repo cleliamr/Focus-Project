@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Coil_v01 import plot_solenoids
 
 # Function to generate points for the solenoids
 def generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn, model_choice, angle, angle_adj, angle_opp):
@@ -25,7 +24,7 @@ def generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn
         solenoid4 = rotate_vector(solenoid2, 'z', angle_adj / 2)
         solenoid_points = solenoid1, solenoid2, solenoid3, solenoid4
 
-        plot_solenoids_4S(solenoid1, solenoid2, solenoid3, solenoid4)
+        plot_solenoids_flex(solenoid1, solenoid2, solenoid3, solenoid4)
 
     elif model_choice == "3S":
         solenoid1 = solenoid_base
@@ -33,12 +32,14 @@ def generate_solenoid_points_flex(N_turns, L, R, shift_distance, points_per_turn
         solenoid3 = rotate_vector(solenoid_base, 'x', -angle)
         solenoid_points = solenoid1, solenoid2, solenoid3
 
+        plot_solenoids_flex(solenoid1, solenoid2, solenoid3)
+
     else:
         solenoid1 = solenoid_base
         solenoid2 = rotate_vector(solenoid_base, 'y', angle)
         solenoid_points = solenoid1, solenoid2
 
-        plot_solenoids_2S(solenoid1, solenoid2)
+        plot_solenoids_flex(solenoid1, solenoid2)
 
     return solenoid_points
 
@@ -87,47 +88,22 @@ def rotate_vector(vector, axis, theta):
 
     return rotated_vector
 
-# Plot the solenoids
-def plot_solenoids_4S(solenoid1, solenoid2, solenoid3, solenoid4):
+# plotting of solenoids
+def plot_solenoids_flex(*solenoids):
     # Create a 3D plot
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
-
-    # Plot each solenoid with different colors
-    ax.plot(solenoid1[:, 0], solenoid1[:, 1], solenoid1[:, 2], lw=1, color='b', label='Solenoid 1')
-    ax.plot(solenoid2[:, 0], solenoid2[:, 1], solenoid2[:, 2], lw=1, color='r', label='Solenoid 2')
-    ax.plot(solenoid3[:, 0], solenoid3[:, 1], solenoid2[:, 2], lw=1, color='y', label='Solenoid 3')
-    ax.plot(solenoid4[:, 0], solenoid4[:, 1], solenoid2[:, 2], lw=1, color='g', label='Solenoid 4')
+    colors = ['b', 'g', 'r', 'y']
+    labels = ['Solenoid 1', 'Solenoid 2', 'Solenoid 3', 'Solenoid 4']
+    solenoids = np.array(solenoids)
+    for i in range(len(solenoids)):
+        ax.plot(solenoids[i][:, 0], solenoids[i][:, 1], solenoids[i][:, 2], lw=1, color=colors[i], label=labels[i])
 
     # Set labels and title
     ax.set_xlabel('X-axis (meters)')
     ax.set_ylabel('Y-axis (meters)')
     ax.set_zlabel('Z-axis (meters)')
-    ax.set_title('Four Solenoids Model')
-
-    # Set aspect ratio for better visualization
-    ax.set_box_aspect([1, 1, 1])
-
-    # Add a legend
-    ax.legend()
-
-    # Show the plot
-    plt.show()
-
-def plot_solenoids_2S(solenoid1, solenoid2):
-    # Create a 3D plot
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(111, projection='3d')
-
-    # Plot each solenoid with different colors
-    ax.plot(solenoid1[:, 0], solenoid1[:, 1], solenoid1[:, 2], lw=1, color='b', label='Solenoid 1')
-    ax.plot(solenoid2[:, 0], solenoid2[:, 1], solenoid2[:, 2], lw=1, color='r', label='Solenoid 2')
-
-    # Set labels and title
-    ax.set_xlabel('X-axis (meters)')
-    ax.set_ylabel('Y-axis (meters)')
-    ax.set_zlabel('Z-axis (meters)')
-    ax.set_title('Two Solenoids Model')
+    ax.set_title('Solenoid Model')
 
     # Set aspect ratio for better visualization
     ax.set_box_aspect([1, 1, 1])

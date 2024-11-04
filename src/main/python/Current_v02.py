@@ -28,6 +28,8 @@ def calculate_current_flex(N_turns, L, points_per_turn, model_choice, angle, ang
         current2 = rotate_vector(current_base, 'y', angle)
         current3 = rotate_vector(current_base, 'x', -angle)
 
+        current = current1, current2, current3
+
     else:
         current1 = current_base
         current2 = rotate_vector(current_base, 'y', angle)
