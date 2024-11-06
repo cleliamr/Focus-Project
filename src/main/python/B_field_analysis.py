@@ -1,31 +1,77 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+
+def B_field_analysis(B_field, x, y, z, time_steps):
+    # get dimensions right
+    B_field_new = np.squeeze(B_field[:])
+
+    # convert to Milliteslas
+    B_field_new *= 1000
+
+    try:
+        B_field_new = B_field_new.reshape(20,3)
+        single_point = True
+    except:
+        single_point = False
+
+
+    if single_point:
+        o_B_field = B_field
+
+        B_field_mag = np.zeros(len(B_field_new))
+        for i in range(len(B_field_new)):
+            B_field_mag[i] = np.sqrt(B_field_new[i, 0] ** 2 + B_field_new[i, 1] ** 2 + B_field_new[i, 2] ** 2)
+
+    else:
+        o_B_field = origin_B_field(B_field_new, x, y, z, time_steps)
+
+        B_field_mag = np.zeros((x.shape[0], x.shape[1], x.shape[2], 20))
+        for i in range(x.shape[0]):
+            for j in range(x.shape[1]):
+                for k in range(x.shape[2]):
+                    for l in range(time_steps):
+                        B_field_mag[i,j,k,l] = np.sqrt(B_field_new[l,0,i,j,k]**2 + B_field_new[l,1,i,j,k]**2 + B_field_new[l,2,i,j,k]**2)
+
+    print(B_field_mag.shape)
+    print(B_field_mag)
+    print(o_B_field.shape)
+    print(o_B_field)
+
+    origin_B_field_analysis(o_B_field)
+
+    # Export as csv.
+    export_as_csv(B_field_mag, time_steps, x)
+
+def origin_B_field(B_field_new, x, y, z, time_steps):
+    o_B_field = np.zeros((time_steps, 3))
+    for i in range(time_steps):
+        # return the Bx, By, Bz values
+        origin_index = np.argmin(np.abs(x) + np.abs(y) + np.abs(z))
+        # save the B-field at origin
+        o_B_field[i] = np.array([B_field_new[i,0,:].flatten()[origin_index], B_field_new[i,1,:].flatten()[origin_index], B_field_new[i,2,:].flatten()[origin_index]])
+    return o_B_field
 
 # Takes B-field at point defined in config and analyses few parameters
-def B_field_analysis(B_field):
-    # multiply to calc in Milliteslas
-    B_field_new = np.squeeze(B_field[:])
-    print(B_field_new)
-    # define array that saves mag of B-field
-    B_field_mag = np.zeros(len(B_field_new))
-    for i in range(len(B_field_new)):
-        B_field_mag[i] = np.sqrt(B_field_new[i,0]**2 + B_field_new[i,1]**2 + B_field_new[i,2]**2)
-    print(B_field_mag)
+def origin_B_field_analysis(o_B_field):
+    o_B_field_mag = np.zeros(len(o_B_field))
+    for i in range(len(o_B_field)):
+        o_B_field_mag[i] = np.sqrt(o_B_field[i,0]**2 + o_B_field[i,1]**2 + o_B_field[i,2]**2)
     # print certain key values
-    print("Minimal Magnitude of B at point (in Milliteslas): ", B_field_mag.min())
-    print("Maximal Magnitude of B at point (in Milliteslas): ", B_field_mag.max())
-    print("Average Magnitude of B at point (in Milliteslas): ", B_field_mag.mean())
+    print("Minimal Magnitude of B at point (in Milliteslas): ", o_B_field_mag.min())
+    print("Maximal Magnitude of B at point (in Milliteslas): ", o_B_field_mag.max())
+    print("Average Magnitude of B at point (in Milliteslas): ", o_B_field_mag.mean())
 
     # plot the behaviour of the B-field over time
-    plot_B_over_time(B_field_new)
+    plot_B_over_time(o_B_field)
 
 def plot_B_over_time(B_field):
     t = np.linspace(0, (len(B_field) // 10) - 1, len(B_field))
     fig, ax = plt.subplots()
 
-    plt.plot(t, B_field[:,0], label='Bx', color='r')
-    plt.plot(t, B_field[:,1], label='By', color='g')
-    plt.plot(t, B_field[:,2], label='Bz', color='b')
+    plt.plot(t, B_field[:, 0], label='Bx', color='r')
+    plt.plot(t, B_field[:, 1], label='By', color='g')
+    plt.plot(t, B_field[:, 2], label='Bz', color='b')
 
     ax.set(xlabel='time (s)', ylabel='B-field strength (T)',
            title='B over time (in Milliteslas)')
@@ -33,3 +79,13 @@ def plot_B_over_time(B_field):
 
     fig.savefig("test.png")
     plt.show()
+
+def export_as_csv(B_field_mag, time_steps, x):
+    # prepare data for csv
+    data = B_field_mag[:,0,0]
+
+    # Convert data to a DataFrame
+    df = pd.DataFrame(data)
+
+    # Export to CSV
+    df.to_csv('C:/Users/julia/Nextcloud/ETH/Focus_Project/04_Simulation/Sim_Coil_models/01.csv', index=False)

@@ -55,14 +55,14 @@ def calculate_superposition_plot_Bfield_task(shm_solenoid_points_name, shm_curre
     shm_current_mag.close()
     shm_current.close()
 
-    # return the Bx, By, Bz values
-    origin_index = np.argmin(np.abs(x) + np.abs(y) + np.abs(z))
-    B_field = np.array([Bx[origin_index], By[origin_index], Bz[origin_index]])
+    # return B-field for analysis
+    B_field = Bx, By, Bz
     return B_field
 
 # creating Grid, defining render density
 def setup_plot(Grid_density, Grid_size):
-    x, y, z = np.mgrid[-Grid_size:Grid_size:Grid_density , -Grid_size:Grid_size:Grid_density, -Grid_size:Grid_size:Grid_density]
+    a = 10 ** (-10) # small number so that point at the end can still be plotted
+    x, y, z = np.mgrid[-Grid_size:Grid_size + a:Grid_density , -Grid_size:Grid_size + a:Grid_density, -Grid_size:Grid_size + a:Grid_density]
     return x, y, z
 
 # calculating number of points in solenoid
@@ -190,7 +190,7 @@ def run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y,
     task_function = partial(calculate_superposition_plot_Bfield_task, shm_solenoid_points.name, shm_current_mag.name, shm_current.name, solenoid_points.shape, current_mag.shape, current.shape, x, y, z)
 
     with Pool() as pool:
-        B_over_time = pool.map(func=task_function, iterable=animation_steps)
+        B_field = pool.map(func=task_function, iterable=animation_steps)
         pool.close()
         pool.join()
 
@@ -202,7 +202,7 @@ def run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y,
     shm_current.close()
     shm_current.unlink()
 
-    return np.array(B_over_time)
+    return np.array(B_field)
 
 
 # Create video from saved frames

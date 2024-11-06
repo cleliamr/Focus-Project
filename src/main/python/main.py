@@ -3,7 +3,7 @@ from B_field_analysis import B_field_analysis
 from config import time_steps
 import numpy as np
 from Permanent_Magnet_model import generate_animation_frames_pmodel, create_video_from_frames_pmodel
-"""
+
 # run the multiprocessing
 if __name__ == '__main__':
     # define model choice
@@ -18,11 +18,13 @@ if __name__ == '__main__':
     B_field = run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y, z)
 
     # output analysis of B-field over time
-    B_field_analysis(B_field, x ,y ,z)
+    B_field_analysis(B_field, x ,y ,z, time_steps)
 
     # create video / animation from frames
     create_video_from_frames()
+
 """
 
 generate_animation_frames_pmodel()
 create_video_from_frames_pmodel()
+"""

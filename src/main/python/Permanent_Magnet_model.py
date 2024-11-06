@@ -13,6 +13,7 @@ def setup_plot(Grid_density, Grid_size):
     return x, y, z
 
 def plot_B_over_time(Bx_over_time, By_over_time, Bz_over_time, B_mag_over_time, time_steps):
+    print("Maximal B-Field Magnitude: ", max(B_mag_over_time))
     t = np.linspace(0, (time_steps // 10) - 1, time_steps)
     fig, ax = plt.subplots()
 
@@ -34,17 +35,12 @@ def magnet_moment_position(magnet_moment, time_steps, Hz, cube_volume):
     magnet_orientations = np.zeros((time_steps, 3))
     t = np.linspace(0, (time_steps // 10) - 1, time_steps)
 
-    theta = (Hz / 10) * (2 * np.pi) * t  #theta equals 0 at beginning
+    theta = Hz * (2 * np.pi) * t  #theta equals 0 at beginning
 
     for i in range(time_steps):
         magnet_orientations[i] = rotate_vector(magnet_moment, 'z', theta[i]) * cube_volume
 
     return magnet_orientations
-
-# define the magnets volume
-def calc_magnet_volume(magnet_dimensions):
-    magnet_volume = magnet_dimensions[0] * magnet_dimensions[1] * magnet_dimensions[2]
-    return magnet_volume
 
 # Function to calculate magnetic field at a point due to a single magnet
 def calculate_magnetic_field(r, magnet_moment):
@@ -163,9 +159,9 @@ def divide_magnet():
     x_vals = np.arange(magnet_min[0], magnet_max[0], cube_size)
     y_vals = np.arange(magnet_min[1], magnet_max[1], cube_size)
     z_vals = np.arange(magnet_min[2], magnet_max[2], cube_size)
-
     # Create a grid of all cube centers within the magnet volume
     cube_centers = np.array(np.meshgrid(x_vals, y_vals, z_vals, indexing ='ij')).T.reshape(-1,3)
+    print(cube_centers.shape)
     cube_volume = cube_size ** 3
     return cube_centers, cube_volume
 
@@ -181,8 +177,11 @@ def add_fields(Bx_over_time, By_over_time, Bz_over_time, B_mag_over_time):
 
 # Generate animation frames
 def generate_animation_frames_pmodel():
-    if (Grid_size * 4) > Grid_density:
+    if (Grid_size * 4) > Grid_density: # check if single point will be plotted
         print("Error: Adapt Grid size or Grid density")
+        exit()
+    elif magnet_dimensions.all() % cube_size == 0: # check whether the splitting of cubes will be done correctly
+        print("Error: Invalid cube dimensions")
         exit()
     # Create folder to store frames if not exist
     if not os.path.exists(output_folder):
