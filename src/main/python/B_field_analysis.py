@@ -33,15 +33,10 @@ def B_field_analysis(B_field, x, y, z, time_steps):
                     for l in range(time_steps):
                         B_field_mag[i,j,k,l] = np.sqrt(B_field_new[l,0,i,j,k]**2 + B_field_new[l,1,i,j,k]**2 + B_field_new[l,2,i,j,k]**2)
 
-    print(B_field_mag.shape)
-    print(B_field_mag)
-    print(o_B_field.shape)
-    print(o_B_field)
-
     origin_B_field_analysis(o_B_field)
 
     # Export as csv.
-    export_as_csv(B_field_mag, time_steps, x)
+    export_as_csv(B_field_new, time_steps, x.shape[0])
 
 def origin_B_field(B_field_new, x, y, z, time_steps):
     o_B_field = np.zeros((time_steps, 3))
@@ -63,6 +58,7 @@ def origin_B_field_analysis(o_B_field):
     print("Average Magnitude of B at point (in Milliteslas): ", o_B_field_mag.mean())
 
     # plot the behaviour of the B-field over time
+    o_B_field = np.squeeze(o_B_field)
     plot_B_over_time(o_B_field)
 
 def plot_B_over_time(B_field):
@@ -80,12 +76,41 @@ def plot_B_over_time(B_field):
     fig.savefig("test.png")
     plt.show()
 
-def export_as_csv(B_field_mag, time_steps, x):
-    # prepare data for csv
-    data = B_field_mag[:,0,0]
+def export_as_csv(B_field_new, time_steps, grid):
+    data = B_field_new
+    # Lists to store the reshaped data
+    dtime_steps = []
+    grid_x = []
+    grid_y = []
+    grid_z = []
+    x_coords = []
+    y_coords = []
+    z_coords = []
 
-    # Convert data to a DataFrame
-    df = pd.DataFrame(data)
+    # Iterate over each time frame and each point in the 3D grid
+    for time in range(time_steps):
+        for i in range(grid):
+            for j in range(grid):
+                for k in range(grid):
+                    # Append each data point to the lists
+                    dtime_steps.append(time)
+                    grid_x.append(i)
+                    grid_y.append(j)
+                    grid_z.append(k)
+                    x_coords.append(data[time, 0, i, j, k])
+                    y_coords.append(data[time, 1, i, j, k])
+                    z_coords.append(data[time, 2, i, j, k])
+
+    # Create a DataFrame
+    df = pd.DataFrame({
+        'Time': dtime_steps,
+        'Grid_X': grid_x,
+        'Grid_Y': grid_y,
+        'Grid_Z': grid_z,
+        'X': x_coords,
+        'Y': y_coords,
+        'Z': z_coords
+    })
 
     # Export to CSV
-    df.to_csv('C:/Users/julia/Nextcloud/ETH/Focus_Project/04_Simulation/Sim_Coil_models/01.csv', index=False)
+    df.to_csv('C:/Users/julia/Nextcloud/ETH/Focus_Project/04_Simulation/Sim_Coil_models/3d_grid_vector_data_03.csv', index=False)

@@ -2,13 +2,13 @@ import numpy as np
 
 # Constants
 mu_0 = 4 * np.pi * 1e-7  # Permeability of free space (T·m/A)
-N_turns = 50  # Number of turns
+N_turns = 20  # Number of turns
 L = 0.1  # 10 cm length
-R = 0.025  # 1 cm radius
-points_per_turn = 20  # points rendered
+R = 0.025  # 2.5 cm radius
+points_per_turn = 10  # points rendered
 shift_distance = 0.2 # distance to focus point
 I_max = 10  # maximal current
-Grid_density = 0.05  # defines the Grid_density
+Grid_density = 0.1  # defines the Grid_density
 time_steps = 20 # Number of frames for the animation
 output_folder = "frames"  # Folder to save the frames
 video_filename = "magnetic_field_animation.mp4"  # Output video filename

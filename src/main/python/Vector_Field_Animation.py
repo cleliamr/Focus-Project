@@ -3,6 +3,7 @@ from mayavi import mlab
 import os
 import threading
 import imageio.v2 as imageio
+import time
 from multiprocessing import Pool, shared_memory
 from functools import partial
 from src.main.python.current_function_v02 import current_mag_flex
@@ -28,6 +29,9 @@ def calculate_current_task(N_turns, L, points_per_turn, model_choice, angle, ang
 
 # function to calc, superposition and plot B-field - called with multiprocessing
 def calculate_superposition_plot_Bfield_task(shm_solenoid_points_name, shm_current_mag_name, shm_current_name, solenoid_points_shape, current_mag_shape, current_shape, x, y, z, animation_steps):
+    # define time_start of MP process
+    time_MP_start = time.time()
+
     # define the shared memory
     shm_solenoid_points = shared_memory.SharedMemory(name=shm_solenoid_points_name)
     shm_current_mag = shared_memory.SharedMemory(name=shm_current_mag_name)
@@ -54,6 +58,11 @@ def calculate_superposition_plot_Bfield_task(shm_solenoid_points_name, shm_curre
     shm_solenoid_points.close()
     shm_current_mag.close()
     shm_current.close()
+
+    # Time needed for MP process
+    MP_process_time = time.time() - time_MP_start
+    print("Time needed for Process number", animation_steps, ":", end="")
+    print(f"{MP_process_time:.2f} seconds")
 
     # return B-field for analysis
     B_field = Bx, By, Bz
