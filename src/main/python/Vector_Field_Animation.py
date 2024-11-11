@@ -2,7 +2,7 @@ import numpy as np
 from mayavi import mlab
 import os
 import threading
-import imageio.v2 as imageio
+import imageio.v3 as imageio
 import time
 from multiprocessing import Pool, shared_memory
 from functools import partial

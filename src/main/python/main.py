@@ -4,6 +4,7 @@ from config import time_steps
 import time
 import numpy as np
 from Permanent_Magnet_model import generate_animation_frames_pmodel, create_video_from_frames_pmodel
+from Cancellation import cancellation_field
 
 # run the multiprocessing
 if __name__ == '__main__':
@@ -36,7 +37,9 @@ if __name__ == '__main__':
     create_video_from_frames()
 
 """
-
 generate_animation_frames_pmodel()
 create_video_from_frames_pmodel()
+"""
+"""
+cancellation_field()
 """

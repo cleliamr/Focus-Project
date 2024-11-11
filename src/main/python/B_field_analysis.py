@@ -36,7 +36,8 @@ def B_field_analysis(B_field, x, y, z, time_steps):
     origin_B_field_analysis(o_B_field)
 
     # Export as csv.
-    export_as_csv(B_field_new, time_steps, x.shape[0])
+    if single_point:
+        export_as_csv(B_field_new, time_steps, x.shape[0])
 
 def origin_B_field(B_field_new, x, y, z, time_steps):
     o_B_field = np.zeros((time_steps, 3))

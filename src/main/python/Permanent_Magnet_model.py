@@ -152,8 +152,8 @@ def rotate_vector(vector, axis, theta):
 def divide_magnet():
     #calculate range of x, y, and z-coordinates
     half_dimensions = magnet_dimensions/2
-    magnet_min = magnet_center -half_dimensions -cube_size/2
-    magnet_max = magnet_center + half_dimensions-cube_size/2
+    magnet_min = magnet_center - half_dimensions + cube_size / 2
+    magnet_max = magnet_center + half_dimensions
 
     # generate coordinates for each small cube within the magnet volume
     x_vals = np.arange(magnet_min[0], magnet_max[0], cube_size)
