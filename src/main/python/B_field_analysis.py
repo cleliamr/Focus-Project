@@ -36,7 +36,7 @@ def B_field_analysis(B_field, x, y, z, time_steps):
     origin_B_field_analysis(o_B_field)
 
     # Export as csv.
-    if single_point:
+    if not single_point:
         export_as_csv(B_field_new, time_steps, x.shape[0])
 
 def origin_B_field(B_field_new, x, y, z, time_steps):
@@ -114,4 +114,4 @@ def export_as_csv(B_field_new, time_steps, grid):
     })
 
     # Export to CSV
-    df.to_csv('C:/Users/julia/Nextcloud/ETH/Focus_Project/04_Simulation/Sim_Coil_models/3d_grid_vector_data_03.csv', index=False)
+    df.to_csv('C:/Users/julia/Nextcloud/ETH/Focus_Project/04_Simulation/Sim_Coil_models/3d_grid_vector_data_04.csv', index=False)

@@ -4,7 +4,7 @@ from config import time_steps
 import time
 import numpy as np
 from Permanent_Magnet_model import generate_animation_frames_pmodel, create_video_from_frames_pmodel
-from Cancellation import cancellation_field
+from Cancellation import cancellation_field, plotting_canc_field
 
 # run the multiprocessing
 if __name__ == '__main__':
@@ -17,13 +17,13 @@ if __name__ == '__main__':
         model_choice = input("Choose between '4S', '3S' and '2S' Model: ")
 
     # Generate setup
-    solenoid_points, current, current_mag, x, y, z = setup_animation_frames(model_choice)
+    solenoid_points, current, current_mag, canc_field, x, y, z = setup_animation_frames(model_choice)
     # time needed for setup
     setup_time = time.time() - start_time
     print(f"Time needed for Coil-setup: {setup_time:.2f} seconds")
 
     # run multiprocessing
-    B_field = run_multiprocessing(time_steps, solenoid_points, current, current_mag, x, y, z)
+    B_field = run_multiprocessing(time_steps, solenoid_points, current, current_mag, canc_field,  x, y, z)
     # time needed for MP
     Tot_time = time.time() - start_time
     MP_time = Tot_time - setup_time
@@ -41,5 +41,6 @@ generate_animation_frames_pmodel()
 create_video_from_frames_pmodel()
 """
 """
-cancellation_field()
+B_fields_canc = cancellation_field()
+plotting_canc_field(B_fields_canc)
 """

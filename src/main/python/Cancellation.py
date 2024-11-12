@@ -32,7 +32,13 @@ def cancellation_field():
         B_fields.append(calculate_B_field_in_room(canc_cube_centers[i, :], canc_magnet_moment_new, x, y, z, numb_cubes))
 
     # Sum the magnetic fields
-    Bx, By, Bz = superpositioning_of_Vector_fields(B_fields)
+    B_fields_canc = np.array(superpositioning_of_Vector_fields(B_fields))
+    print(B_fields_canc.shape)
+    return B_fields_canc
+
+def plotting_canc_field(B_fields_canc, x, y, z):
+    x, y, z = setup_plot(Grid_density, Grid_size)
+    Bx, By, Bz = B_fields_canc
 
     # Plot and save the magnetic field
     plot_magnetic_field(x, y, z, Bx, By, Bz, output_folder)
@@ -137,6 +143,7 @@ def plot_magnetic_field(x, y, z, Bx, By, Bz, output_folder):
     # Save the frame as an image
     frame_filename = os.path.join(output_folder, f"frame_{step:03d}.png")
     mlab.savefig(frame_filename, size=(1920, 1080))
+    mlab.show()
 
 # based on dipole assumption calculate the magnetic field strength at each point
 def calculate_B_field_in_room(cube_centers, magnet_moment, x, y, z, numb_cubes):
@@ -163,5 +170,6 @@ def calculate_magnetic_field(r, magnet_moment):
 
 # creating Grid, defining render density
 def setup_plot(Grid_density, Grid_size):
-    x, y, z = np.mgrid[-Grid_size:Grid_size:Grid_density , -Grid_size:Grid_size:Grid_density, -Grid_size:Grid_size:Grid_density]
+    a = 10 ** (-10) # small number so that point at the end can still be plotted
+    x, y, z = np.mgrid[-Grid_size:Grid_size + a:Grid_density , -Grid_size:Grid_size + a:Grid_density, -Grid_size:Grid_size + a:Grid_density]
     return x, y, z
