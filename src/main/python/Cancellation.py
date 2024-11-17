@@ -33,10 +33,15 @@ def cancellation_field():
 
     # Sum the magnetic fields
     B_fields_canc = np.array(superpositioning_of_Vector_fields(B_fields))
-    print(B_fields_canc.shape)
+
+    B_fields_canc_mag = np.linalg.norm(B_fields_canc, axis=0)
+    min_coords = np.unravel_index(np.argmin(B_fields_canc_mag), B_fields_canc_mag.shape)
+    print("Minimum magnitude location:", min_coords)
+    print("Minimum magnitude:", B_fields_canc_mag[min_coords])
+
     return B_fields_canc
 
-def plotting_canc_field(B_fields_canc, x, y, z):
+def plotting_canc_field(B_fields_canc):
     x, y, z = setup_plot(Grid_density, Grid_size)
     Bx, By, Bz = B_fields_canc
 

@@ -9,10 +9,9 @@ def B_field_analysis(B_field, x, y, z, time_steps):
     # convert to Milliteslas
     B_field_new *= 1000
 
-    try:
-        B_field_new = B_field_new.reshape(20,3)
+    if len(B_field_new.shape) == 2:
         single_point = True
-    except:
+    else:
         single_point = False
 
 
@@ -114,4 +113,4 @@ def export_as_csv(B_field_new, time_steps, grid):
     })
 
     # Export to CSV
-    df.to_csv('C:/Users/julia/Nextcloud/ETH/Focus_Project/04_Simulation/Sim_Coil_models/3d_grid_vector_data_04.csv', index=False)
+    df.to_csv('C:/Users/julia/Nextcloud/ETH/Focus_Project/04_Simulation/Sim_Coil_models/3d_grid_vector_data_07.csv', index=False)

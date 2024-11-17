@@ -47,7 +47,7 @@ def calculate_superposition_plot_Bfield_task(shm_solenoid_points_name, shm_curre
 
     # Calculate B-field for each solenoid
     B_fields = []
-    print(animation_steps)
+    print("currently processing:", animation_steps)
     for i in range(len(solenoid_points)):
         B_fields.append(calculate_B_field(solenoid_points[i], current[i], current_mag[i, animation_steps], N_turns, points_per_turn, mu_0, x, y, z))
 
