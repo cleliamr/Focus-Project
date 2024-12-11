@@ -1,7 +1,9 @@
 import numpy as np
 import os
 from mayavi import mlab
-from config import canc_hor_distance, canc_vert_distance, canc_magnet_dimensions, canc_magnet_moment, canc_cube_size, mu_0, Grid_density, Grid_size, output_folder
+from config import canc_hor_distance, canc_vert_distance, canc_magnet_dimensions, canc_magnet_moment, canc_cube_size, \
+    mu_0, Grid_density, Grid_size, output_folder, N_turns, points_per_turn
+
 
 def cancellation_field():
     if canc_magnet_dimensions.all() % canc_cube_size == 0: # check whether the splitting of cubes will be done correctly
@@ -15,9 +17,13 @@ def cancellation_field():
                                     [canc_hor_distance/2, 0, canc_vert_distance],
                                     [-canc_hor_distance/2, 0, canc_vert_distance]])
     # calculate their FEM centers and the respective volume
+    magnet_dimensions_y = np.array([canc_magnet_dimensions[1], canc_magnet_dimensions[0], canc_magnet_dimensions[2]])
+    magnet_dimensions = np.array([magnet_dimensions_y, magnet_dimensions_y, canc_magnet_dimensions, canc_magnet_dimensions])
+
     canc_cube_centers = np.zeros((4, numb_cubes, 3))
+
     for i in range(4):
-        canc_cube_centers[i, :] = divide_magnet(canc_magnet_centers[i], canc_magnet_dimensions, canc_cube_size)
+        canc_cube_centers[i, :] = divide_magnet(canc_magnet_centers[i], magnet_dimensions[i], canc_cube_size)
     canc_cube_centers = np.array(canc_cube_centers)
 
     canc_cube_volume = canc_cube_size ** 3
@@ -175,6 +181,71 @@ def calculate_magnetic_field(r, magnet_moment):
 
 # creating Grid, defining render density
 def setup_plot(Grid_density, Grid_size):
-    a = 10 ** (-10) # small number so that point at the end can still be plotted
-    x, y, z = np.mgrid[-Grid_size:Grid_size + a:Grid_density , -Grid_size:Grid_size + a:Grid_density, -Grid_size:Grid_size + a:Grid_density]
+    if Grid_density > (2 * Grid_size):
+        print("Calculating for single point")
+        x = np.array([[[0]]])
+        y = np.array([[[0]]])
+        z = np.array([[[0]]])
+    else:
+        a = 10 ** (-10) # small number so that point at the end can still be plotted
+        x, y, z = np.mgrid[-Grid_size:Grid_size + a:Grid_density , -Grid_size:Grid_size + a:Grid_density, -Grid_size:Grid_size + a:Grid_density]
     return x, y, z
+
+def coil_cancellation_setup(N_turns_out, I_out):
+    r_in = 0.01
+    r_out = 0.02
+    L = 0.015
+    I_max = 5
+    N_turns_max = 500
+    total_points_max_in = int((2 * np.pi * r_in / 0.001) * N_turns)
+    total_points_max_out = int((2 * np.pi * r_out / 0.001) * N_turns * N_turns_out)
+    dl_in = (2 * np.pi * r_in ) / (total_points_max_in / N_turns)
+    dl_out = (2 * np.pi * r_out ) / (total_points_max_out / (N_turns * N_turns_out))
+
+    solenoid_in, current_in = create_solenoid_current(L, N_turns, r_in, 1, 1, total_points_max_in)
+    solenoid_out, current_out = create_solenoid_current(L, N_turns, r_out, N_turns_out, I_out, total_points_max_out)
+
+    points = define_points()
+    calc_B_field_points(solenoid_in, current_in, points, total_points_max_in, dl_in)
+    calc_B_field_points(solenoid_out, current_out, points, total_points_max_out, dl_out)
+
+def calc_B_field_points(solenoid, current, points, total_points, dl):
+    B = np.zeros((21, 3))
+    for i in range(21):
+        for j in range(total_points):
+            r = np.array(solenoid[j]) - np.array(points[i])
+            B[i] += Biot_Savart_Law(mu_0, current, r, dl)
+
+
+
+# take 3d current and radius and return 3d B-field
+def Biot_Savart_Law(mu_0, current, r, dl):
+    r_mag = np.linalg.norm(r)  # Magnitude of r vector
+    if r_mag == 0:
+        return np.array([0, 0, 0])  # To avoid division by zero
+    return dl * mu_0 * np.cross(current, r) / ((r_mag ** 3) * 4 * np.pi)
+
+def define_points():
+    a = np.zeros(5)
+    b = np.arange(21)
+    points = np.column_stack((a, a, b))
+    return points
+
+def create_solenoid_current(L, N_turns, r, factor_turns, factor_I, total_points_max):
+    # Parametric equation for the inner solenoid
+    z = np.linspace(-L, 0, total_points_max * factor_turns)  # Solenoid length centered at the origin
+    theta = np.linspace(0, 2 * np.pi * N_turns, total_points_max * factor_turns)  # Angular positions
+
+    # Helix coordinates in cylindrical form
+    x_helix = r * np.cos(theta)  # x-coordinates (circle)
+    y_helix = r * np.sin(theta)  # y-coordinates (circle)
+
+    # Solenoid Base: Along the Z-axis (standard solenoid)
+    solenoid = np.column_stack((x_helix, y_helix, z))
+
+    dx_helix = -np.sin(theta)  # x-coordinates (circle)
+    dy_helix = np.cos(theta)  # y-coordinates (circle)
+
+    current = np.column_stack((dx_helix * factor_I, dy_helix * factor_I, [0] * total_points_max))
+
+    return solenoid, current

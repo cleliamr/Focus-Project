@@ -36,10 +36,7 @@ if __name__ == '__main__':
     # create video / animation from frames
     create_video_from_frames()
 
-"""
-generate_animation_frames_pmodel()
-create_video_from_frames_pmodel()
-"""
+
 """
 B_fields_canc = cancellation_field()
 plotting_canc_field(B_fields_canc)

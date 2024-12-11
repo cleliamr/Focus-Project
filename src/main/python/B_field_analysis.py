@@ -25,7 +25,7 @@ def B_field_analysis(B_field, x, y, z, time_steps):
     else:
         o_B_field = origin_B_field(B_field_new, x, y, z, time_steps)
 
-        B_field_mag = np.zeros((x.shape[0], x.shape[1], x.shape[2], 20))
+        B_field_mag = np.zeros((x.shape[0], x.shape[1], x.shape[2], time_steps))
         for i in range(x.shape[0]):
             for j in range(x.shape[1]):
                 for k in range(x.shape[2]):
@@ -113,4 +113,4 @@ def export_as_csv(B_field_new, time_steps, grid):
     })
 
     # Export to CSV
-    df.to_csv('C:/Users/julia/Nextcloud/ETH/Focus_Project/04_Simulation/Sim_Coil_models/3d_grid_vector_data_07.csv', index=False)
+    df.to_csv('C:/Users/julia/Nextcloud/ETH/Focus_Project/04_Simulation/Sim_Coil_models/3d_grid_vector_data_08.csv', index=False)
