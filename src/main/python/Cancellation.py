@@ -1,8 +1,9 @@
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 from mayavi import mlab
 from config import canc_hor_distance, canc_vert_distance, canc_magnet_dimensions, canc_magnet_moment, canc_cube_size, \
-    mu_0, Grid_density, Grid_size, output_folder, N_turns, points_per_turn
+    mu_0, Grid_density, Grid_size, output_folder, N_turns
 
 
 def cancellation_field():
@@ -12,10 +13,11 @@ def cancellation_field():
 
     numb_cubes = int(np.prod(canc_magnet_dimensions / canc_cube_size))
     # define the initial centers of all magnets
-    canc_magnet_centers = np.array([[0, canc_hor_distance/2, canc_vert_distance],
-                                    [0, -canc_hor_distance/2, canc_vert_distance],
-                                    [canc_hor_distance/2, 0, canc_vert_distance],
-                                    [-canc_hor_distance/2, 0, canc_vert_distance]])
+    canc_magnet_centers = np.array([[0, canc_hor_distance/2 + (canc_magnet_dimensions[0] / 2), canc_vert_distance + (canc_magnet_dimensions[2] / 2)],
+                                    [0, -canc_hor_distance/2 - (canc_magnet_dimensions[0] / 2), canc_vert_distance + (canc_magnet_dimensions[2] / 2)],
+                                    [canc_hor_distance/2 + (canc_magnet_dimensions[0] / 2), 0, canc_vert_distance + (canc_magnet_dimensions[2] / 2)],
+                                    [-canc_hor_distance/2 - (canc_magnet_dimensions[0] / 2), 0, canc_vert_distance + (canc_magnet_dimensions[2] / 2)]])
+
     # calculate their FEM centers and the respective volume
     magnet_dimensions_y = np.array([canc_magnet_dimensions[1], canc_magnet_dimensions[0], canc_magnet_dimensions[2]])
     magnet_dimensions = np.array([magnet_dimensions_y, magnet_dimensions_y, canc_magnet_dimensions, canc_magnet_dimensions])
@@ -30,6 +32,7 @@ def cancellation_field():
     canc_magnet_moment_new = canc_magnet_moment * canc_cube_volume
 
     x, y, z = setup_plot(Grid_density, Grid_size)
+    print(z.shape)
 
     B_fields = []
     # For each cube loop through time steps and update the magnetic field
@@ -41,11 +44,36 @@ def cancellation_field():
     B_fields_canc = np.array(superpositioning_of_Vector_fields(B_fields))
 
     B_fields_canc_mag = np.linalg.norm(B_fields_canc, axis=0)
+
+    # Output B-mag on z axis
+    plot_canc_field_z_axis(B_fields_canc_mag, Grid_density, Grid_size)
+
     min_coords = np.unravel_index(np.argmin(B_fields_canc_mag), B_fields_canc_mag.shape)
     print("Minimum magnitude location:", min_coords)
     print("Minimum magnitude:", B_fields_canc_mag[min_coords])
 
     return B_fields_canc
+
+def plot_canc_field_z_axis(B_fields_canc_mag, Grid_density, Grid_size):
+    x_axis = np.zeros(int((2 * Grid_size[2]) / Grid_density + 1))
+    y_values = np.zeros(int((2 * Grid_size[2]) / Grid_density + 1))
+
+    for i in range(int((2 * Grid_size[2]) / Grid_density + 1)):
+        d = int(1000 * (i * Grid_density - Grid_size[2]))
+        x_axis[i] = d
+        index = B_fields_canc_mag.shape
+        y_values[i] = B_fields_canc_mag[int(index[0] / 2) + 1, int(index[1] / 2) + 1,i] * 1000
+
+    fig, ax = plt.subplots()
+
+    ax.plot(x_axis, y_values, lw=1, color='b', label='Cancellation magnitude on z-axis')
+
+    ax.set(xlabel='Distance (mm)', ylabel='B-field (mT)',
+           title='B-field on z-axis')
+    ax.grid()
+
+    fig.savefig("test.png")
+    plt.show()
 
 def plotting_canc_field(B_fields_canc):
     x, y, z = setup_plot(Grid_density, Grid_size)
@@ -181,14 +209,14 @@ def calculate_magnetic_field(r, magnet_moment):
 
 # creating Grid, defining render density
 def setup_plot(Grid_density, Grid_size):
-    if Grid_density > (2 * Grid_size):
+    if Grid_density > (2 * Grid_size[2]):
         print("Calculating for single point")
         x = np.array([[[0]]])
         y = np.array([[[0]]])
         z = np.array([[[0]]])
     else:
         a = 10 ** (-10) # small number so that point at the end can still be plotted
-        x, y, z = np.mgrid[-Grid_size:Grid_size + a:Grid_density , -Grid_size:Grid_size + a:Grid_density, -Grid_size:Grid_size + a:Grid_density]
+        x, y, z = np.mgrid[-Grid_size[0]:Grid_size[0] + a:Grid_density , -Grid_size[1]:Grid_size[1] + a:Grid_density, -Grid_size[2]:Grid_size[2] + a:Grid_density]
     return x, y, z
 
 def coil_cancellation_setup(N_turns_out, I_out):

@@ -76,14 +76,14 @@ def calculate_superposition_plot_Bfield_task(shm_solenoid_points_name, shm_curre
 
 # creating Grid, defining render density
 def setup_plot(Grid_density, Grid_size):
-    if Grid_density > (2 * Grid_size):
+    if Grid_density > (2 * Grid_size[2]):
         print("Calculating for single point")
         x = np.array([[[0]]])
         y = np.array([[[0]]])
         z = np.array([[[0]]])
     else:
         a = 10 ** (-10) # small number so that point at the end can still be plotted
-        x, y, z = np.mgrid[-Grid_size:Grid_size + a:Grid_density , -Grid_size:Grid_size + a:Grid_density, -Grid_size:Grid_size + a:Grid_density]
+        x, y, z = np.mgrid[-Grid_size[0]:Grid_size[0] + a:Grid_density , -Grid_size[1]:Grid_size[1] + a:Grid_density, -Grid_size[2]:Grid_size[2] + a:Grid_density]
     return x, y, z
 
 # calculating number of points in solenoid
@@ -134,7 +134,7 @@ def calculate_B_field(solenoid, current, mag, N_turns, points_per_turn, mu_0, x,
 def plot_magnetic_field(x, y, z, Bx, By, Bz, step, output_folder):
     B_magnitude = np.sqrt(Bx ** 2 + By ** 2 + Bz ** 2)
     mlab.figure(size=(1920, 1080), bgcolor=(1, 1, 1))  # Create a white background figure
-    quiver = mlab.quiver3d(x, y, z, Bx, By, Bz, scalars=B_magnitude, scale_factor=500, colormap='jet')
+    quiver = mlab.quiver3d(x, y, z, Bx, By, Bz, scalars=B_magnitude, scale_factor=5, colormap='jet')
     mlab.view(azimuth=45, elevation=45, distance=1)
     mlab.colorbar(quiver, title="Field Magnitude", orientation='vertical')
     mlab.title(f"Magnetic Field at Step {step}", size=0.2)
