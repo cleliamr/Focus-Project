@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+# try
 
 def B_field_analysis(B_field, x, y, z, time_steps):
     # get dimensions right
